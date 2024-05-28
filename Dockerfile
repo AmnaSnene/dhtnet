@@ -23,19 +23,3 @@ RUN git submodule update --init --recursive
 RUN mkdir build_dev && cd build_dev \
 	&& cmake .. -DBUILD_DEPENDENCIES=On -DCMAKE_INSTALL_PREFIX=/usr \
 	&& make -j && make install
-
-FROM build AS test
-
-RUN apt-get update && apt-get install gcovr lcov -y
-
-RUN cd build_dev \
-    && cmake -DBUILD_TESTING=On -DCODE_COVERAGE=On .. \
-    && make -j \
-    && ctest -T Test -T Coverage \
-    && ctest -T coverage > /result.summary
-
-# Generate HTML report
-RUN cd build_dev/CMakeFiles/dhtnet.dir \
-    && lcov --capture --no-external --directory /dhtnet --output-file coverage.info \
-    && mkdir /coverage \
-    && genhtml coverage.info --output-directory /coverage
