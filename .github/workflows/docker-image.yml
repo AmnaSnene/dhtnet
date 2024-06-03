@@ -6,7 +6,7 @@ on:
       - master
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/dhtnet
+  IMAGE_NAME_DEPS: ${{ github.repository }}/dhtnet
   
 jobs:
   build:
