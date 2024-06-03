@@ -3,10 +3,10 @@ name: Release Package
 on:
   push:
     branches:
-      - main
+      - master
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository }}/dhtnet
   
 jobs:
   build:
