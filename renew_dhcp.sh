@@ -3,8 +3,8 @@
 # Function to handle DHCP renewal
 renew_dhcp() {
     while true; do
-        /usr/local/bin/renew_dhcp.sh
-        sleep 60  # Renew every minute
+        dhclient
+        sleep 1  # Renew every minute
     done
 }
 
