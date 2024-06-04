@@ -5,22 +5,13 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 
-# Install network manager
-RUN apt-get update && \
-    apt-get install -y network-manager && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-# Enable and start NetworkManager
-RUN systemctl enable NetworkManager
-
 RUN apt-get update && apt-get install -y \
 	build-essential pkg-config cmake git wget \
         libtool autotools-dev autoconf \
         cython3 python3-dev python3-setuptools python3-build python3-virtualenv \
         libncurses5-dev libreadline-dev nettle-dev libcppunit-dev \
         libgnutls28-dev libuv1-dev libjsoncpp-dev libargon2-dev libunistring-dev \
-        libssl-dev libfmt-dev libhttp-parser-dev libasio-dev libmsgpack-dev libyaml-cpp-dev isc-dhcp-client \
+        libssl-dev libfmt-dev libhttp-parser-dev libasio-dev libmsgpack-dev libyaml-cpp-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /var/cache/apt/*
 
 COPY . dhtnet
