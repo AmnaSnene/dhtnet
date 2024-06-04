@@ -15,7 +15,7 @@ RUN apt-get update && \
 RUN systemctl enable NetworkManager
 
 RUN apt-get update && apt-get install -y \
-        build-essential pkg-config cmake git wget \
+	build-essential pkg-config cmake git wget \
         libtool autotools-dev autoconf \
         cython3 python3-dev python3-setuptools python3-build python3-virtualenv \
         libncurses5-dev libreadline-dev nettle-dev libcppunit-dev \
@@ -32,3 +32,18 @@ RUN git submodule update --init --recursive
 RUN mkdir build_dev && cd build_dev \
 	&& cmake .. -DBUILD_DEPENDENCIES=On -DCMAKE_INSTALL_PREFIX=/usr \
 	&& make -j && make install
+
+From build as test
+RUN apt-get update && \
+	apt-get install -y isc-dhcp-client && \
+	apt-get clean && \
+	rm -rf /var/lib/apt/lists/*
+
+# Copy the DHCP renewal and script
+COPY renew_dhcp.sh /usr/local/bin/renew_dhcp.sh
+
+# Make scripts executable
+RUN chmod +x /usr/local/bin/renew_dhcp.sh
+
+# Set the entrypoint
+ENTRYPOINT ["/usr/local/bin/renew_dhcp.sh"]
