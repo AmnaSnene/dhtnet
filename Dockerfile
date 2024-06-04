@@ -5,6 +5,15 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 
+# Install network manager
+RUN apt-get update && \
+    apt-get install -y network-manager && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Enable and start NetworkManager
+RUN systemctl enable NetworkManager
+
 RUN apt-get update && apt-get install -y \
         build-essential pkg-config cmake git wget \
         libtool autotools-dev autoconf \
