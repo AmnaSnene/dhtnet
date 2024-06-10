@@ -26,7 +26,7 @@ RUN mkdir build_dev && cd build_dev \
 
 From build as test
 RUN apt-get update && \
-	apt-get install -y isc-dhcp-client && \
+	apt-get install -y isc-dhcp-client gdb && \
 	apt-get clean && \
 	rm -rf /var/lib/apt/lists/*
 
