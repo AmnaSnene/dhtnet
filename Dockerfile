@@ -31,10 +31,10 @@ RUN apt-get update && \
 	rm -rf /var/lib/apt/lists/*
 
 # Copy the DHCP renewal and script
-COPY renew_dhcp.sh /usr/local/bin/renew_dhcp.sh
+#COPY renew_dhcp.sh /usr/local/bin/renew_dhcp.sh
 
 # Make scripts executable
-RUN chmod +x /usr/local/bin/renew_dhcp.sh
+#RUN chmod +x /usr/local/bin/renew_dhcp.sh
 
 # Set the entrypoint
-ENTRYPOINT ["/usr/local/bin/renew_dhcp.sh"]
+#ENTRYPOINT ["/usr/local/bin/renew_dhcp.sh"]
