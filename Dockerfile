@@ -35,5 +35,3 @@ ADD renew_dhcp /etc/cron.d/dhcp-cron
 
 # Give execution rights on the cron job
 RUN chmod 0644 /etc/cron.d/dhcp-cron
-
-CMD cron
