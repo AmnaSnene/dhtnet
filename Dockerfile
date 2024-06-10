@@ -26,12 +26,11 @@ RUN mkdir build_dev && cd build_dev \
 
 From build as test
 RUN apt-get update && \
-	apt-get install -y isc-dhcp-client cron && \
+	apt-get install -y isc-dhcp-client && \
 	apt-get clean && \
 	rm -rf /var/lib/apt/lists/*
- 
-# Add crontab file in the cron directory
-ADD renew_dhcp /etc/cron.d/dhcp-cron
 
-# Give execution rights on the cron job
-RUN chmod 0644 /etc/cron.d/dhcp-cron
+COPY renew_dhcp.sh /usr/local/bin/renew_dhcp.sh
+RUN chmod +x /usr/local/bin/renew_dhcp.sh
+
+CMD ["/usr/local/bin/renew_dhcp.sh"]
