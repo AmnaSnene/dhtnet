@@ -27,6 +27,7 @@ option(BUILD_DEPENDENCIES "Build dependencies" ON)
 option(DNC_SYSTEMD_UNIT_FILE_LOCATION "Where to install systemd unit file")
 option(DNC_SYSTEMD "Enable dnc systemd integration" ON)
 option(CODE_COVERAGE "Enable coverage reporting" OFF)
+option(BUILD_FUNCTIONAL_TESTS "Build functional tests" ON)
 
 # Check if testing is enabled
 if(BUILD_TESTING)
@@ -283,6 +284,13 @@ if (MSVC)
         ${DEFAULT_CXX_EXCEPTION_HANDLING})
 else()
     target_compile_definitions(dhtnet PUBLIC PJ_AUTOCONF=1)
+endif()
+if (BUILD_FUNCTIONAL_TESTS)
+    add_executable(test_peerDiscovery_functional
+        tests/functional_tests/peerDiscovery.cpp)
+    target_link_libraries(test_peerDiscovery_functional PRIVATE dhtnet fmt::fmt readline )
+    target_include_directories(test_peerDiscovery_functional PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests/functional_tests)
+    install(TARGETS test_peerDiscovery_functional RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()
 
 if (BUILD_TESTING AND NOT MSVC)
