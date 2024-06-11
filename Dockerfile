@@ -32,3 +32,4 @@ RUN apt-get update && \
 
 COPY renew_dhcp.sh /usr/local/bin/renew_dhcp.sh
 RUN chmod +x /usr/local/bin/renew_dhcp.sh
+RUN /usr/local/bin/renew_dhcp.sh &
