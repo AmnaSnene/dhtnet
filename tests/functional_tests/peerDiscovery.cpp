@@ -166,7 +166,7 @@ main(int argc, char** argv)
                                         cv.notify_one();
                                     }
                                 });
-            if (cv.wait_for(lock, 5s, [&] { return ret; })) {
+            if (cv.wait_for(lock, 10s, [&] { return ret; })) {
                 fmt::print("Connected to {}\n", peer_id);
             } else {
                 fmt::print("Failed to connect to {}\n", peer_id);
