@@ -52,9 +52,8 @@ setupHandler(const std::string& name,
 
     dht::DhtRunner::Context dhtContext;
     
-    dhtContext.identityAnnouncedCb = [logger](bool ok) {
-        if (logger)
-            logger->debug("Identity announced {}\n", ok);
+    dhtContext.identityAnnouncedCb = [](bool ok) {
+        fmt::print("Identity announced {}\n", ok);
     };
     
     dhtContext.certificateStore = [c = h->certStore](const dht::InfoHash& pk_id) {
