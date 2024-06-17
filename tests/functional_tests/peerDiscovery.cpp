@@ -51,6 +51,12 @@ setupHandler(const std::string& name,
     dhtConfig.peer_publish = true;
 
     dht::DhtRunner::Context dhtContext;
+    
+    dhtContext.identityAnnouncedCb = [logger](bool ok) {
+        if (logger)
+            logger->debug("Identity announced {}\n", ok);
+    };
+    
     dhtContext.certificateStore = [c = h->certStore](const dht::InfoHash& pk_id) {
         std::vector<std::shared_ptr<dht::crypto::Certificate>> ret;
         if (auto cert = c->getCertificate(pk_id.toString()))
