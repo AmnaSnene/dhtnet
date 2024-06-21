@@ -14,9 +14,12 @@
 #include <readline/history.h>
 
 #include <condition_variable>
-
+#include<fmt/chrono.h>
 namespace dhtnet {
-
+using namespace std::literals::chrono_literals;
+using clock = std::chrono::high_resolution_clock;
+using time_point = clock::time_point;
+using duration = clock::duration;
 struct ConnectionHandler
 {
     dht::crypto::Identity id;
@@ -53,15 +56,18 @@ setupHandler(const std::string& name,
     dht::DhtRunner::Context dhtContext;
     
     dhtContext.identityAnnouncedCb = [](bool ok) {
-        fmt::print("Identity announced {}\n", ok);
+        fmt::print("{} Identity announced {}\n", clock::now().time_since_epoch().count(), ok);
     };
+
     dhtContext.publicAddressChangedCb = [](std::vector<dht::SockAddr> addr) {
         if (addr.size() != 0)
-            fmt::print("Public address changed \n");
+            fmt::print("{} Public address changed \n", clock::now().time_since_epoch().count());
     };
+
     dhtContext.statusChangedCallback = [](dht::NodeStatus status4, dht::NodeStatus status6) {
-        fmt::print("Connectivity changed: IPv4: {}, IPv6: {}\n", dht::statusToStr(status4), dht::statusToStr(status6));
+        fmt::print("{} Connectivity changed: IPv4: {}, IPv6: {}\n", clock::now().time_since_epoch().count(), dht::statusToStr(status4), dht::statusToStr(status6));
     };
+
     dhtContext.certificateStore = [c = h->certStore](const dht::InfoHash& pk_id) {
         std::vector<std::shared_ptr<dht::crypto::Certificate>> ret;
         if (auto cert = c->getCertificate(pk_id.toString()))
