@@ -55,7 +55,10 @@ setupHandler(const std::string& name,
     dhtContext.identityAnnouncedCb = [](bool ok) {
         fmt::print("Identity announced {}\n", ok);
     };
-    
+    dhtContext.publicAddressChangedCb = [](std::vector<dht::SockAddr> addr) {
+        if (addr.size() != 0)
+            fmt::print("Public address changed \n");
+    };
     dhtContext.certificateStore = [c = h->certStore](const dht::InfoHash& pk_id) {
         std::vector<std::shared_ptr<dht::crypto::Certificate>> ret;
         if (auto cert = c->getCertificate(pk_id.toString()))
