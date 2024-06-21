@@ -60,7 +60,7 @@ setupHandler(const std::string& name,
             fmt::print("Public address changed \n");
     };
     dhtContext.statusChangedCallback = [](dht::NodeStatus status4, dht::NodeStatus status6) {
-        fmt::print("Connectivity changed: IPv4: {}, IPv6: {}", dht::statusToStr(status4), dht::statusToStr(status6));
+        fmt::print("Connectivity changed: IPv4: {}, IPv6: {}\n", dht::statusToStr(status4), dht::statusToStr(status6));
     };
     dhtContext.certificateStore = [c = h->certStore](const dht::InfoHash& pk_id) {
         std::vector<std::shared_ptr<dht::crypto::Certificate>> ret;
