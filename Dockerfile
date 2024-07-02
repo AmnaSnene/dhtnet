@@ -23,7 +23,7 @@ RUN git submodule update --init --recursive
 RUN mkdir build_dev && cd build_dev \
 	&& cmake .. -DBUILD_DEPENDENCIES=On -DCMAKE_INSTALL_PREFIX=/usr \
 	&& make -j && make install
-
+RUN chmod +x renew_dhcp.sh
 FROM build AS test
 
 RUN apt-get update && apt-get install gcovr lcov -y
