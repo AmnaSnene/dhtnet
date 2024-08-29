@@ -39,7 +39,10 @@ public:
         const std::string& turn_user,
         const std::string& turn_pass,
         const std::string& turn_realm,
-        const bool anonymous);
+        const bool anonymous,
+        const bool verbose,
+        const std::map<std::string, std::vector<int>> authorized_services,
+        const bool enable_upnp);
     // Build a client
     Dnc(
         dht::crypto::Identity identity,
@@ -50,7 +53,9 @@ public:
         const std::string& turn_host,
         const std::string& turn_user,
         const std::string& turn_pass,
-        const std::string& turn_realm);
+        const std::string& turn_realm,
+        const bool verbose,
+        const bool enable_upnp);
     ~Dnc();
     void run();
 
@@ -60,7 +65,6 @@ private:
     std::shared_ptr<tls::CertificateStore> certStore;
     std::shared_ptr<IceTransportFactory> iceFactory;
     std::shared_ptr<asio::io_context> ioContext;
-    std::thread ioContextRunner;
     std::shared_ptr<tls::TrustStore> trustStore;
 
     std::pair<std::string, std::string> parseName(const std::string_view name);

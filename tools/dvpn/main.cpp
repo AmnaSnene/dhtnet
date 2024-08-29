@@ -60,7 +60,7 @@ static const constexpr struct option long_options[]
        {"turn_user", required_argument, nullptr, 'u'},
        {"turn_pass", required_argument, nullptr, 'w'},
        {"turn_realm", required_argument, nullptr, 'r'},
-       {"vpn_configuration_file", required_argument, nullptr, 'C'},
+       {"vpn_configuration", required_argument, nullptr, 'C'},
        {"certificate", required_argument, nullptr, 'c'},
        {"configuration", required_argument, nullptr, 'd'},
        {"anonymous", no_argument, nullptr, 'a'},
@@ -71,7 +71,7 @@ parse_args(int argc, char** argv)
 {
     dhtvpn_params params;
     int opt;
-    while ((opt = getopt_long(argc, argv, "hvlw:r:u:t:p:b:c:C:d:", long_options, nullptr)) != -1) {
+    while ((opt = getopt_long(argc, argv, "hvlab:t:u:w:r:p:c:C:d:", long_options, nullptr)) != -1) {
         switch (opt) {
         case 'h':
             params.help = true;
@@ -82,11 +82,11 @@ parse_args(int argc, char** argv)
         case 'l':
             params.listen = true;
             break;
+        case 'a':
+            params.anonymous_cnx = true;
+            break;
         case 'b':
             params.bootstrap = optarg;
-            break;
-        case 'p':
-            params.privateKey = optarg;
             break;
         case 't':
             params.turn_host = optarg;
@@ -100,17 +100,17 @@ parse_args(int argc, char** argv)
         case 'r':
             params.turn_realm = optarg;
             break;
-        case 'C':
-            params.configuration_file = optarg;
-            break;
         case 'c':
             params.cert = optarg;
             break;
+        case 'p':
+            params.privateKey = optarg;
+            break;
+        case 'C':
+            params.configuration_file = optarg;
+            break;
         case 'd':
             params.configuration = optarg;
-            break;
-        case 'a':
-            params.anonymous_cnx = true;
             break;
         default:
             std::cerr << "Invalid option" << std::endl;
@@ -179,7 +179,7 @@ setSipLogLevel()
 
     pj_log_set_level(level);
     pj_log_set_log_func([](int level, const char* data, int len) {
-        fmt::print("{}", std::string_view(data, len));
+        Log("{}", std::string_view(data, len));
     });
 }
 
@@ -190,34 +190,38 @@ main(int argc, char** argv)
     auto params = parse_args(argc, argv);
 
     if (params.help) {
-        fmt::print(
+        Log(
             "Usage: dvpn [options] [PEER_ID]\n"
             "\nOptions:\n"
-            "  -h, --help            Show this help message and exit.\n"
-            "  -v, --version         Display the program version.\n"
-            "  -l, --listen          Start the program in listen mode.\n"
-            "  -b, --bootstrap       Specify the bootstrap option with an argument.\n"
-            "  -p, --privateKey      Specify the privateKey option with an argument.\n"
-            "  -t, --turn_host       Specify the turn_host option with an argument.\n"
-            "  -u, --turn_user       Specify the turn_user option with an argument.\n"
-            "  -w, --turn_pass       Specify the turn_pass option with an argument.\n"
-            "  -r, --turn_realm      Specify the turn_realm option with an argument.\n"
-            "  -C, --vpn_configuration Specify the vpn_configuration path option with an argument.\n"
-            "  -c, --certificate              Specify the certificate path option with an argument.\n"
-            "  -d, --configuration Specify the configuration path option with an argument.\n"
-            "  -a, --anonymous       Specify the anonymous option with an argument.\n"
+            "  -h, --help                      Show this help message and exit.\n"
+            "  -v, --version                   Display the program version.\n"
+            "  -l, --listen                    Start the program in listen mode.\n"
+            "  -b, --bootstrap [ADDRESS]       Specify the bootstrap option with an argument.\n"
+            "  -t, --turn_host [ADDRESS]       Specify the turn_host option with an argument.\n"
+            "  -u, --turn_user [USER]          Specify the turn_user option with an argument.\n"
+            "  -w, --turn_pass [SECRET]        Specify the turn_pass option with an argument.\n"
+            "  -r, --turn_realm [REALM]        Specify the turn_realm option with an argument.\n"
+            "  -C, --vpn_configuration [FILE]  Specify the vpn_configuration path option with an argument.\n"
+            "  -c, --certificate [FILE]        Specify the certificate path option with an argument.\n"
+            "  -p, --privateKey [FILE]         Specify the privateKey option with an argument.\n"
+            "  -d, --configuration [FILE]      Specify the configuration path option with an argument.\n"
+            "  -a, --anonymous                 Specify the anonymous option with an argument.\n"
             "\n");
         return EXIT_SUCCESS;
     }
     if (params.version) {
-        fmt::print("dvpn v1.0\n");
+        Log("dvpn v1.0\n");
         return EXIT_SUCCESS;
     }
 
-    fmt::print("dvpn 1.0\n");
+    Log("dvpn 1.0\n");
 
     auto identity = dhtnet::loadIdentity(params.privateKey, params.cert);
-    fmt::print("Loaded identity: {}\n", identity.second->getId());
+    if (!identity.first || !identity.second) {
+        fmt::print(stderr, "Hint: To generate new identity files, run: dhtnet-crtmgr --interactive\n");
+        return EXIT_FAILURE;
+    }
+    Log("Loaded identity: {}\n", identity.second->getId());
 
     std::unique_ptr<dhtnet::Dvpn> dvpn;
     if (params.listen) {

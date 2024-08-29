@@ -49,6 +49,9 @@ struct dhtnc_params
     std::string turn_realm {};
     std::string configuration {};
     bool anonymous_cnx {false};
+    bool verbose {false};
+    std::map<std::string, std::vector<int>> authorizedServices {};
+    bool enable_upnp {true};
 };
 
 static const constexpr struct option long_options[]
@@ -63,9 +66,9 @@ static const constexpr struct option long_options[]
        {"turn_user", required_argument, nullptr, 'u'},
        {"turn_pass", required_argument, nullptr, 'w'},
        {"turn_realm", required_argument, nullptr, 'r'},
-       {"cert", required_argument, nullptr, 'c'},
+       {"certificate", required_argument, nullptr, 'c'},
        {"configuration", required_argument, nullptr, 'd'},
-       {"anonymous_cnx", no_argument, nullptr, 'a'},
+       {"anonymous", no_argument, nullptr, 'a'},
        {nullptr, 0, nullptr, 0}};
 
 dhtnc_params
@@ -73,13 +76,20 @@ parse_args(int argc, char** argv)
 {
     dhtnc_params params;
     int opt;
+    int v_count = 0;
     while ((opt = getopt_long(argc, argv, "ahvlw:r:u:t:P:b:p:i:c:d:", long_options, nullptr)) != -1) {
         switch (opt) {
         case 'h':
             params.help = true;
             break;
         case 'v':
-            params.version = true;
+            v_count++;
+            if (v_count == 1) {
+                params.version = true;
+            }else if (v_count == 2) {
+                params.version = false;
+                params.verbose = true;
+            }
             break;
         case 'P':
             params.remote_port = std::stoi(optarg);
@@ -136,7 +146,7 @@ parse_args(int argc, char** argv)
 
     // extract values from dnc yaml file
     if (!params.configuration.empty()) {
-        printf("read configuration file: %s\n", params.configuration.c_str());
+        Log("Read configuration file: {}\n", params.configuration.c_str());
         std::ifstream config_file(params.configuration);
         if (!config_file.is_open()) {
             std::cerr << "Error: Could not open configuration file.\n";
@@ -164,13 +174,36 @@ parse_args(int argc, char** argv)
                 params.cert = config["certificate"].as<std::string>();
             }
             if (config["ip"] && params.remote_host.empty()) {
-                params.configuration = config["ip"].as<std::string>();
+                params.remote_host = config["ip"].as<std::string>();
             }
             if (config["port"] && params.remote_port == 0) {
                 params.remote_port = config["port"].as<int>();
             }
             if (config["anonymous"] && !params.anonymous_cnx) {
                 params.anonymous_cnx = config["anonymous"].as<bool>();
+            }
+            if (config["verbose"] && !params.verbose) {
+                params.verbose = config["verbose"].as<bool>();
+            }
+            if (config["authorized_services"]) {
+                for (auto service : config["authorized_services"]) {
+                    std::string ip = service["ip"].as<std::string>();
+                    int port = 0;
+                    try {
+                        port = service["port"].as<int>();
+                    } catch (YAML::TypedBadConversion<int> e) {
+                        std::cerr << "Error: Invalid port number in configuration file.\n";
+                        exit(EXIT_FAILURE);
+                    }
+                    if (port < 1 || port > 65535 || ip.empty()) {
+                        std::cerr << "Error: Invalid ip or port number in configuration file.\n";
+                        exit(EXIT_FAILURE);
+                    }
+                    params.authorizedServices[ip].push_back(port);
+                }
+            }
+            if (config["enable_upnp"]) {
+                params.enable_upnp = config["enable_upnp"].as<bool>();
             }
         }
     }
@@ -188,7 +221,7 @@ setSipLogLevel()
 
     pj_log_set_level(level);
     pj_log_set_log_func([](int level, const char* data, int len) {
-        fmt::print("{}", std::string_view(data, len));
+        Log("{}", std::string_view(data, len));
     });
 }
 
@@ -199,35 +232,39 @@ main(int argc, char** argv)
     auto params = parse_args(argc, argv);
 
     if (params.help) {
-        fmt::print("Usage: dnc [options] [PEER_ID]\n"
+        Log("Usage: dnc [options] [PEER_ID]\n"
                    "\nOptions:\n"
-                   "  -h, --help            Show this help message and exit.\n"
-                   "  -v, --version         Display the program version.\n"
-                   "  -P, --port            Specify the port option with an argument.\n"
-                   "  -i, --ip              Specify the ip option with an argument.\n"
-                   "  -l, --listen          Start the program in listen mode.\n"
-                   "  -b, --bootstrap       Specify the bootstrap option with an argument.\n"
-                   "  -t, --turn_host       Specify the turn_host option with an argument.\n"
-                   "  -u, --turn_user       Specify the turn_user option with an argument.\n"
-                   "  -w, --turn_pass       Specify the turn_pass option with an argument.\n"
-                   "  -r, --turn_realm      Specify the turn_realm option with an argument.\n"
-                   "  -c, --certificate     Specify the certificate option with an argument.\n"
-                   "  -d, --configuration Specify the configuration option with an argument.\n"
-                   "  -p, --privateKey      Specify the privateKey option with an argument.\n"
-                   "  -a, --anonymous_cnx   Enable the anonymous mode.\n");
+                   "  -h, --help                  Show this help message and exit.\n"
+                   "  -v, --version               Display the program version.\n"
+                   "  -P, --port [PORT]           Specify the port option with an argument.\n"
+                   "  -i, --ip [ADDRESS]          Specify the ip option with an argument.\n"
+                   "  -l, --listen                Start the program in listen mode.\n"
+                   "  -b, --bootstrap [ADDRESS]   Specify the bootstrap option with an argument.\n"
+                   "  -t, --turn_host [ADDRESS]   Specify the turn_host option with an argument.\n"
+                   "  -u, --turn_user [USER]      Specify the turn_user option with an argument.\n"
+                   "  -w, --turn_pass [SECRET]    Specify the turn_pass option with an argument.\n"
+                   "  -r, --turn_realm [REALM]    Specify the turn_realm option with an argument.\n"
+                   "  -c, --certificate  [FILE]   Specify the certificate option with an argument.\n"
+                   "  -d, --configuration [FILE]  Specify the configuration option with an argument.\n"
+                   "  -p, --privateKey [FILE]     Specify the privateKey option with an argument.\n"
+                   "  -a, --anonymous             Enable the anonymous mode.\n"
+                   "  -vv, --verbose              Enable verbose mode.\n");
         return EXIT_SUCCESS;
     }
 
     if (params.version) {
-        fmt::print("dnc v1.0\n");
+        Log("dnc v1.0\n");
         return EXIT_SUCCESS;
     }
 
     auto identity = dhtnet::loadIdentity(params.privateKey, params.cert);
-    fmt::print("Loaded identity: {}\n", identity.second->getId());
+    if (!identity.first || !identity.second) {
+        fmt::print(stderr, "Hint: To generate new identity files, run: dhtnet-crtmgr --interactive\n");
+        return EXIT_FAILURE;
+    }
+    Log("Loaded identity: {}\n", identity.second->getId());
 
-    fmt::print("dnc 1.0\n");
-
+    Log("dnc 1.0\n");
     std::unique_ptr<dhtnet::Dnc> dhtnc;
     if (params.listen) {
         // create dnc instance
@@ -237,7 +274,10 @@ main(int argc, char** argv)
                                               params.turn_user,
                                               params.turn_pass,
                                               params.turn_realm,
-                                              params.anonymous_cnx);
+                                              params.anonymous_cnx,
+                                              params.verbose,
+                                              params.authorizedServices,
+                                              params.enable_upnp);
     } else {
         dhtnc = std::make_unique<dhtnet::Dnc>(identity,
                                               params.bootstrap,
@@ -247,7 +287,9 @@ main(int argc, char** argv)
                                               params.turn_host,
                                               params.turn_user,
                                               params.turn_pass,
-                                              params.turn_realm);
+                                              params.turn_realm,
+                                              params.verbose,
+                                              params.enable_upnp);
     }
     dhtnc->run();
     return EXIT_SUCCESS;

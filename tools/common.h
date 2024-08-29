@@ -21,7 +21,12 @@
 #include "ice_transport_factory.h"
 #include "certstore.h"
 
+#include "upnp/upnp_control.h"
+#include "upnp/upnp_context.h"
+
 namespace dhtnet {
+
+#define Log(...) do { fmt::print(__VA_ARGS__); std::fflush(stdout); } while (0)
 
 using Buffer = std::shared_ptr<std::vector<uint8_t>>;
 constexpr size_t BUFFER_SIZE = 64 * 1024;
@@ -38,7 +43,8 @@ std::unique_ptr<ConnectionManager::Config> connectionManagerConfig(
     const std::string& turn_host ="",
     const std::string& turn_user="",
     const std::string& turn_pass="",
-    const std::string& turn_realm="");
+    const std::string& turn_realm="",
+    const bool enable_upnp=true);
 // add ioContext to readFromStdin
 
 template<typename T>

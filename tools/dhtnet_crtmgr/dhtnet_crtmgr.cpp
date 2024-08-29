@@ -43,9 +43,19 @@ loadIdentity(const std::filesystem::path& privatekey, const std::filesystem::pat
 dht::crypto::Identity generateIdentity(const std::filesystem::path& path_id, const std::string& name, const dht::crypto::Identity& ca)
 {
     auto identity = dht::crypto::generateIdentity(name, ca);
-    if (!std::filesystem::exists(path_id))
-        std::filesystem::create_directories(path_id);
-    dht::crypto::saveIdentity(identity, path_id / name);
+    std::error_code ec;
+    std::filesystem::create_directories(path_id, ec);
+    if (ec) {
+        fmt::print(stderr, "Error: failed to create directory {}\n", path_id.string());
+        return {};
+    }
+    // catch error
+    try{
+        dht::crypto::saveIdentity(identity, path_id / name);
+    } catch (const std::exception& e) {
+        fmt::print(stderr, "Error: failed to save identity: {}\n", e.what());
+        return {};
+    }
     return identity;
 }
 } // namespace dhtnet

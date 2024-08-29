@@ -15,6 +15,7 @@ set (libdir "${CMAKE_INSTALL_FULL_LIBDIR}")
 set (includedir "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
 set (bindir "${CMAKE_INSTALL_FULL_BINDIR}")
 set (sysconfdir "${CMAKE_INSTALL_FULL_SYSCONFDIR}")
+set (docdir "${CMAKE_INSTALL_FULL_DOCDIR}")
 set (top_srcdir "${CMAKE_CURRENT_SOURCE_DIR}")
 set (VERSION ${CMAKE_PROJECT_VERSION})
 
@@ -143,6 +144,15 @@ if (DNC_SYSTEMD AND BUILD_TOOLS AND NOT MSVC)
         set(SYSTEMD_UNIT_INSTALL_DIR ${DNC_SYSTEMD_UNIT_FILE_LOCATION})
     endif()
 
+    if (NOT DEFINED DNC_SYSTEMD_PRESET_FILE_LOCATION OR NOT DNC_SYSTEMD_PRESET_FILE_LOCATION)
+        execute_process(COMMAND ${PKG_CONFIG_EXECUTABLE} systemd --variable=systemdsystempresetdir
+                        OUTPUT_VARIABLE SYSTEMD_PRESET_INSTALL_DIR)
+        message("-- Using Systemd preset installation directory by pkg-config: " ${SYSTEMD_PRESET_INSTALL_DIR})
+    else()
+        message("-- Using Systemd preset installation directory requested: " ${DNC_SYSTEMD_PRESET_FILE_LOCATION})
+        set(SYSTEMD_PRESET_INSTALL_DIR ${DNC_SYSTEMD_PRESET_FILE_LOCATION})
+    endif()
+
     configure_file (
         tools/dnc/systemd/dnc.service.in
         systemd/dnc.service
@@ -152,6 +162,11 @@ if (DNC_SYSTEMD AND BUILD_TOOLS AND NOT MSVC)
         string(REGEX REPLACE "[ \t\n]+" "" SYSTEMD_UNIT_INSTALL_DIR "${SYSTEMD_UNIT_INSTALL_DIR}")
         set (systemdunitdir "${SYSTEMD_UNIT_INSTALL_DIR}")
         install (FILES ${CMAKE_CURRENT_BINARY_DIR}/systemd/dnc.service DESTINATION ${systemdunitdir})
+
+        string(REGEX REPLACE "[ \t\n]+" "" SYSTEMD_PRESET_INSTALL_DIR "${SYSTEMD_PRESET_INSTALL_DIR}")
+        set (systemdpresetdir "${SYSTEMD_PRESET_INSTALL_DIR}")
+        install (FILES tools/dnc/systemd/dhtnet-dnc.preset DESTINATION ${systemdpresetdir})
+
         install (FILES tools/dnc/dnc.yaml DESTINATION ${sysconfdir}/dhtnet/)
     else()
         message(WARNING "Systemd unit installation directory not found. The systemd unit won't be installed.")
@@ -218,6 +233,10 @@ if (DHTNET_NATPMP AND NOT MSVC)
             message("NAT-PMP found: ${natpmp_LIBRARIES}")
             set (libsprivate "${libsprivate} -lnatpmp")
         endif()
+    else()
+        message("NAT-PMP found")
+        set(natpmp_LIBRARIES PkgConfig::natpmp)
+        set (requiresprivate "${requiresprivate} natpmp")
     endif()
 endif()
 
@@ -355,7 +374,15 @@ if (BUILD_TOOLS AND NOT MSVC)
     install(FILES
         tools/dnc/dnc.1
         tools/dsh/dsh.1
-    DESTINATION ${CMAKE_INSTALL_MANDIR})
+        tools/dvpn/dvpn.1
+        tools/dhtnet_crtmgr/dhtnet-crtmgr.1
+    DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
+
+    install(FILES README.md DESTINATION ${docdir})
+    install(FILES tools/dnc/README.md RENAME DNC.md DESTINATION ${docdir})
+    install(FILES tools/dsh/README.md RENAME DSH.md DESTINATION ${docdir})
+    install(FILES tools/dvpn/README.md RENAME DVPN.md DESTINATION ${docdir})
+    install(FILES tools/dhtnet_crtmgr/README.md RENAME DHTNET_CRTMGR.md DESTINATION ${docdir})
 endif()
 
 if (BUILD_BENCHMARKS)
